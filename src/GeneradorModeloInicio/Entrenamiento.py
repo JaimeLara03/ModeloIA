@@ -9,12 +9,22 @@ import signal
 import sys
 import os
 
+# Habilitar la ejecución ansiosa
+tf.config.run_functions_eagerly(True)
+
 # Configuración de parámetros
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
 EPOCHS = 10
+
+# Solicitar la ruta de guardado para el modelo y el dataset al usuario
 MODEL_PATH = "Modelo/Hasby.h5"
 CHECKPOINT_PATH = "Modelo/training_checkpoint"
+
+ruta_guardado_dataset = input("Ingresa la ruta completa donde quieres guardar el dataset: ")
+ruta_guardado_dataset = os.path.join(ruta_guardado_dataset, "DATASET")
+if not os.path.exists(ruta_guardado_dataset):
+    os.makedirs(ruta_guardado_dataset)
 
 # Filtrar el dataset COCO para que solo contenga vehículos
 VEHICLE_CLASSES = [3, 6, 8]  # IDs de COCO para "car", "bus", "truck"
@@ -25,7 +35,7 @@ def filter_vehicle_classes(example):
     return mask
 
 # Cargar el dataset y aplicar el filtro
-dataset, info = tfds.load("coco/2017", split='train', with_info=True)
+dataset, info = tfds.load("coco/2017", split='train', with_info=True, data_dir=ruta_guardado_dataset)
 vehicle_dataset = dataset.filter(filter_vehicle_classes)
 
 # Preprocesamiento de las imágenes
@@ -43,10 +53,15 @@ train_dataset = vehicle_dataset.shuffle(1000).batch(BATCH_SIZE).prefetch(tf.data
 # Variables para el control de interrupción y restauración
 initial_epoch = 0
 
+# Inicializar el optimizador
+optimizer = tf.keras.optimizers.Adam()
+
 # Cargar el modelo desde el archivo guardado si existe
 if os.path.exists(MODEL_PATH):
     print(f"Modelo encontrado en '{MODEL_PATH}', cargando para continuar el entrenamiento.")
     model = load_model(MODEL_PATH)
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    
     # Restaurar el estado de entrenamiento si hay un checkpoint
     checkpoint = tf.train.Checkpoint(optimizer=model.optimizer, model=model, epoch=tf.Variable(1))
     if os.path.exists(CHECKPOINT_PATH + ".index"):
@@ -63,16 +78,16 @@ else:
         GlobalAveragePooling2D(),
         Dense(1, activation='sigmoid')
     ])
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
 
     # Configurar el checkpoint para el nuevo modelo
-    checkpoint = tf.train.Checkpoint(optimizer=model.optimizer, model=model, epoch=tf.Variable(1))
+    checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model, epoch=tf.Variable(1))
 
 # Configurar el manejador de señal para guardar el modelo en caso de interrupción
 def save_model_on_interrupt(signal, frame):
     print("\nInterrupción recibida, guardando el estado del modelo...")
     checkpoint.epoch.assign(initial_epoch)  # Guardar la epoch actual
-    checkpoint.save(CHECKPOINT_PATH)
+    checkpoint.write(CHECKPOINT_PATH)  # Usar 'write' en lugar de 'save'
     model.save(MODEL_PATH)
     print(f"Estado guardado y modelo guardado como '{MODEL_PATH}'")
     sys.exit(0)
@@ -96,7 +111,7 @@ for epoch in range(initial_epoch, EPOCHS):
 
     # Guardar el estado después de cada epoch
     checkpoint.epoch.assign(epoch + 1)
-    checkpoint.save(CHECKPOINT_PATH)
+    checkpoint.write(CHECKPOINT_PATH)  # Usar 'write' en lugar de 'save'
     model.save(MODEL_PATH)
 
 print("Entrenamiento completo.")
