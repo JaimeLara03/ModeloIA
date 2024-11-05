@@ -18,8 +18,8 @@ BATCH_SIZE = 32
 EPOCHS = 10
 
 # Solicitar la ruta de guardado para el modelo y el dataset al usuario
-MODEL_PATH = "Modelo/Hasby.h5"
-CHECKPOINT_PATH = "Modelo/training_checkpoint"
+MODEL_PATH = "src/Modelo/Hasby.h5"
+CHECKPOINT_PATH = "src/Modelo/training_checkpoint"
 
 ruta_guardado_dataset = input("Ingresa la ruta completa donde quieres guardar el dataset: ")
 ruta_guardado_dataset = os.path.join(ruta_guardado_dataset, "DATASET")
