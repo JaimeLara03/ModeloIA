@@ -13,7 +13,7 @@ import os
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
 EPOCHS = 10
-MODEL_PATH = "Modelo/hasby.h5"
+MODEL_PATH = "Modelo/Hasby.h5"
 CHECKPOINT_PATH = "Modelo/training_checkpoint"
 
 # Filtrar el dataset COCO para que solo contenga vehículos
@@ -45,7 +45,7 @@ initial_epoch = 0
 
 # Cargar el modelo desde el archivo guardado si existe
 if os.path.exists(MODEL_PATH):
-    print(f"\n\nModelo encontrado en '{MODEL_PATH}', cargando para continuar el entrenamiento.\n\n")
+    print(f"Modelo encontrado en '{MODEL_PATH}', cargando para continuar el entrenamiento.")
     model = load_model(MODEL_PATH)
     # Restaurar el estado de entrenamiento si hay un checkpoint
     checkpoint = tf.train.Checkpoint(optimizer=model.optimizer, model=model, epoch=tf.Variable(1))
